@@ -32,6 +32,10 @@ main() {
   // the HttpRequest future was created.
   // -> Our onRunAsync handlers are never called.
 
+  // Outputs:
+  // LEN single 43548
+  // LEN double 43548
+
   var future = HttpRequest.getString("http://bing.com");
 
   runZonedExperimental(() {
@@ -52,12 +56,19 @@ main() {
   // Therefore, application authors would need to grok zones and be aware
   // of zone boundaries.
 
+  // Outputs:
+  // RUN-ASYNC: Wrapped-single
+  //     LEN Wrapped-single 120656
+  //     RUN-ASYNC: Wrapped-double
+  //         LEN Wrapped-double 120656
+  //     DONE RUN-ASYNC: Wrapped-double
+  // DONE RUN-ASYNC: Wrapped-single
+
   zoneFuture(future) {
     var c = new Completer();
     future.then((data) => c.complete(data));
     return c.future;
   }
-
 
   runZonedExperimental(() {
     var cnnFuture = HttpRequest.getString("http://cnn.com");
@@ -73,6 +84,14 @@ main() {
   // Without the 'completerA' hack here, the 's' onRunAsync is not called.
   // This implies the location of the completer.complete() call is important,
   // as well as the 'new Completer()' call.
+
+  // Output:
+  // RUN-ASYNC: s
+  //     LEN s 67874
+  // DONE RUN-ASYNC: s
+
+  // without completerA, Output:
+  // LEN s 67874
 
   Future<HttpRequest> request(String url) {
     var completerA = new Completer<HttpRequest>();
@@ -98,6 +117,13 @@ main() {
   // ANOTHER SOLUTION: ONDONE
   // on-done appears to work as expected.  Any 'then' clauses are executed before the onDone.
   // This works if the future is created inside or outside the runZoned call.
+
+  // Output:
+  // LEN itv 54913
+  // a then outside of runZoned is run before itv-ondone
+  // itv ondone
+  // LEN bbc 104456
+  // bbc ondone
 
   runZonedExperimental(() {
     var bbcFuture = HttpRequest.getString('http://bbc.co.uk').then(genPrintLen('bbc'));
